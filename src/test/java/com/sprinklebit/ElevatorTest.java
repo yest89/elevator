@@ -17,13 +17,26 @@ public class ElevatorTest
     public void test()
     {
         elevator.board(Elevator.Direction.UP, 4, 1);
-        elevator.board(Elevator.Direction.DOWN, 3, 2);
+        elevator.board(Elevator.Direction.DOWN, 2, 3);
         elevator.board(Elevator.Direction.DOWN, 1, 4);
+
+
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        elevator.board(Elevator.Direction.UP, 3, 1);
+        elevator.board(Elevator.Direction.UP, 2, 1);
+        elevator.board(Elevator.Direction.DOWN, 1, 3);
+
     }
 
     public static void main(String[] args)
     {
-        ElevatorTest elevatorTest = new ElevatorTest(new Elevator());
+        Elevator elevator = new Elevator();
+        elevator.working();
+        ElevatorTest elevatorTest = new ElevatorTest(elevator);
         elevatorTest.test();
     }
 }

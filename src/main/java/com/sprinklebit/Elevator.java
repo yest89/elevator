@@ -8,9 +8,11 @@ public class Elevator implements IElevator
     public static final int CAPACITY = 10;
     public static final int NUMBER_OF_FLOORS = 4;
     public static final int SPEED_OF_ELEVATOR = 1; // m/s
+    public static final int BEGINNING_FLOOR = 1;
     public static final int HEIGHT_OF_ONE_FLOOR = 1; // m/s
     public static final int TIME_FOR_CLOSING_DOOR = 3; // s
     public static final int TIME_FOR_OPENING_DOOR = 3; // s
+    public static final int MILLISECONDS_IN_SECOND = 1000;
     public static final int TIME_FOR_BOARDING = 3; // s
     public static final int AVERAGE_OF_PERSON_WEIGTH = 70; // kg
 
@@ -19,6 +21,7 @@ public class Elevator implements IElevator
     private int currentFloor;
     private int passengersOnBoard;
 
+    private Thread workingElevator;
     private static Set<ElevatorTask> tasksInProcessing = new LinkedHashSet<>();
     private static Set<ElevatorTask> tasksInElevator = new LinkedHashSet<>();
     private static Set<ElevatorTask> tasksInWaiting = new LinkedHashSet<>();
@@ -26,6 +29,12 @@ public class Elevator implements IElevator
     public enum Direction
     {
         UP, DOWN, STOPPED
+    }
+
+    public Elevator()
+    {
+        this.currentFloor = BEGINNING_FLOOR;
+        this.isAllowanceOfTakingTask = true;
     }
 
     private class ElevatorTask
@@ -75,13 +84,12 @@ public class Elevator implements IElevator
         }
     }
 
-    //InterfaceForUser
     public void goBoarding(int quantityOfPassengers)
     {
         try
         {
-            System.out.println("Person is on board.");
-            Thread.sleep(TIME_FOR_BOARDING);
+            System.out.println("Person is on board on " + currentFloor + " floor.");
+            Thread.sleep(TIME_FOR_BOARDING * MILLISECONDS_IN_SECOND);
             passengersOnBoard += quantityOfPassengers;
         }
         catch (InterruptedException e)
@@ -94,8 +102,8 @@ public class Elevator implements IElevator
     {
         try
         {
-            System.out.println("Person is going off.");
-            Thread.sleep(TIME_FOR_BOARDING);
+            System.out.println("Person is going off on " + currentFloor + " floor.");
+            Thread.sleep(TIME_FOR_BOARDING * MILLISECONDS_IN_SECOND);
         }
         catch (InterruptedException e)
         {
@@ -123,8 +131,8 @@ public class Elevator implements IElevator
         }
         try
         {
-            System.out.println("Door is closing...");
-            Thread.sleep(TIME_FOR_CLOSING_DOOR);
+            System.out.println("Door is closing on " + currentFloor + " floor.");
+            Thread.sleep(TIME_FOR_CLOSING_DOOR * MILLISECONDS_IN_SECOND);
             isAllowanceOfTakingTask = false;
         }
         catch (InterruptedException e)
@@ -136,15 +144,15 @@ public class Elevator implements IElevator
 
     private boolean isOverWeight()
     {
-        return (passengersOnBoard * AVERAGE_OF_PERSON_WEIGTH) < (CAPACITY * AVERAGE_OF_PERSON_WEIGTH);
+        return (passengersOnBoard * AVERAGE_OF_PERSON_WEIGTH) > (CAPACITY * AVERAGE_OF_PERSON_WEIGTH);
     }
 
     private boolean openDoor()
     {
         try
         {
-            System.out.println("Door is opening...");
-            Thread.sleep(TIME_FOR_OPENING_DOOR);
+            System.out.println("Door is opening on " + currentFloor + " floor.");
+            Thread.sleep(TIME_FOR_OPENING_DOOR * MILLISECONDS_IN_SECOND);
             isAllowanceOfTakingTask = true;
         }
         catch (InterruptedException e)
@@ -156,7 +164,6 @@ public class Elevator implements IElevator
 
     public void board(Direction direction, int toFloor, int fromFloor)
     {
-        working();
         if (toFloor > 0 && fromFloor > 0)
         {
             ElevatorTask task = new ElevatorTask(toFloor, fromFloor, direction);
@@ -172,87 +179,101 @@ public class Elevator implements IElevator
         }
     }
 
-    private void working()
+    public void working()
     {
-        while (!tasksInProcessing.isEmpty() || directionOfMoving == Direction.STOPPED)
-        {
-            Iterator<ElevatorTask> iterator = tasksInProcessing.iterator();
-            if (iterator.hasNext())
+        workingElevator = new Thread(() -> {
+            while (true)
             {
-                ElevatorTask currentTask = iterator.next();
-                iterator.remove();
-                tasksInElevator.add(currentTask);
-                if (currentFloor == currentTask.fromFloor)
+                Iterator<ElevatorTask> iteratorProcess = tasksInProcessing.iterator();
+                ElevatorTask taskInProcess = null;
+                if (iteratorProcess.hasNext())
                 {
-                    openDoor();
+                    taskInProcess = iteratorProcess.next();
+                    tasksInElevator.add(taskInProcess);
                 }
-                else
+                Iterator<ElevatorTask> iteratorInElevator = tasksInElevator.iterator();
+                if (iteratorInElevator.hasNext())
                 {
-                    movingToFloor(currentTask.fromFloor);
-                    currentFloor = currentTask.fromFloor;
-                    openDoor();
-                }
-                goBoarding(ElevatorTask.quantityOfPeople);
-                closeDoor();
-                movingToFloor(currentTask.toFloor);
-                openDoor();
-                passengersOnBoard -= ElevatorTask.quantityOfPeople;
+                    ElevatorTask currentTask = iteratorInElevator.next();
+                    if (taskInProcess == currentTask) {
+                        if (currentFloor == currentTask.fromFloor) {
+                            openDoor();
+                        } else {
+                            movingToFloor(currentTask.fromFloor);
+                            currentFloor = currentTask.fromFloor;
+                            openDoor();
+                        }
 
+                        goBoarding(ElevatorTask.quantityOfPeople);
+                        closeDoor();
+                    }
+                    directionOfMoving = currentTask.direction;
+                    System.out.println("Moving to floor #" + currentTask.toFloor);
+                    movingToFloor(currentTask.toFloor);
+                    tasksInProcessing.remove(currentTask);
+                }
             }
-        }
+        });
+        workingElevator.start();
     }
 
     private void movingToFloor(Integer toFloor)
     {
-
-        //process from taskInProcessing;
-//        tasksInProcessing.stream().filter(t -> (t.toFloor.stream().filter( )).findFirst();
-//        List<ElevatorTask> collect = tasksInProcessing
-//                .stream()
-//                .filter(t -> t.toFloor
-//                        .stream()
-//                        .anyMatch(f -> (f > currentFloor) && (f < toFloor)))
-//                .collect(Collectors.toList());
-
-//        tasksInProcessing.stream().forEach(t ->
-//                {
-//                    t.toFloor
-//                }
-//        );
-
         try
         {
-
-            int dest;
+            int amountOfFloors;
             if (currentFloor > toFloor)
             {
-                dest = currentFloor - toFloor;
+                amountOfFloors = currentFloor - toFloor;
             }
             else
             {
-                dest = toFloor - currentFloor;
+                amountOfFloors = toFloor - currentFloor;
             }
-            System.out.println("Moving to floor #" + toFloor);
-
-            for (int i = 0; i < dest; i++)
+            if (tasksInElevator.isEmpty())
             {
-                Thread.sleep(HEIGHT_OF_ONE_FLOOR/SPEED_OF_ELEVATOR);
-                currentFloor++;
+                System.out.println("Moving to floor #" + toFloor);
+                Thread.sleep((amountOfFloors/SPEED_OF_ELEVATOR) * MILLISECONDS_IN_SECOND);
+            }
+            else
+            {
+                for (int i = 0; i < amountOfFloors; i++)
+                {
+                    Thread.sleep((HEIGHT_OF_ONE_FLOOR/SPEED_OF_ELEVATOR) * MILLISECONDS_IN_SECOND);
+                    switch (directionOfMoving)
+                    {
+                        case DOWN:
+                            currentFloor--;
+                            break;
+                        case UP:
+                            currentFloor++;
+                            break;
+                        case STOPPED:
+                            break;
+                    }
 
-                List<ElevatorTask> tasksOffBoard = tasksInElevator.stream().filter(t -> t.toFloor == currentFloor).collect(Collectors.toList());
-                if (!tasksOffBoard.isEmpty())
-                {
-                    tasksInElevator.removeAll(tasksOffBoard);
-                    openDoor();
-                    goOffBoarding();
-                }
-                List<ElevatorTask> tasksOnBoard = tasksInProcessing.stream().filter(t -> t.fromFloor == currentFloor).collect(Collectors.toList());
-                if (!tasksOnBoard.isEmpty())
-                {
-                    tasksInElevator.addAll(tasksOnBoard);
-                    openDoor();
-                    goBoarding(ElevatorTask.quantityOfPeople);
-                    closeDoor();
+                    List<ElevatorTask> tasksOffBoard = tasksInElevator.stream().filter(t -> t.toFloor == currentFloor).collect(Collectors.toList());
+                    if (!tasksOffBoard.isEmpty())
+                    {
+                        tasksInElevator.removeAll(tasksOffBoard);
+                        openDoor();
+                        goOffBoarding();
+                    }
+                    List<ElevatorTask> tasksOnBoard = tasksInProcessing.stream().filter(t -> t.fromFloor == currentFloor).collect(Collectors.toList());
+                    if (!tasksOnBoard.isEmpty())
+                    {
+                        tasksInElevator.addAll(tasksOnBoard);
+                        tasksInProcessing.removeAll(tasksOnBoard);
+                        if (!isAllowanceOfTakingTask)
+                        {
+                            openDoor();
+                        }
+                        goBoarding(ElevatorTask.quantityOfPeople);
+                    }
+                    if(isAllowanceOfTakingTask)
+                    {
+                        closeDoor();
+                    }
                 }
             }
         }
