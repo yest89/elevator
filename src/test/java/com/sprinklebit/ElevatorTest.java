@@ -16,9 +16,9 @@ public class ElevatorTest
 
     public void test()
     {
-        elevator.board(Elevator.Direction.UP, 4, 1, 1);
-        elevator.board(Elevator.Direction.DOWN, 3, 2, 1);
-        elevator.board(Elevator.Direction.DOWN, 1, 4, 1);
+        elevator.board(Elevator.Direction.UP, 4, 1);
+        elevator.board(Elevator.Direction.DOWN, 3, 2);
+        elevator.board(Elevator.Direction.DOWN, 1, 4);
     }
 
     public static void main(String[] args)
