@@ -2,5 +2,6 @@ package com.sprinklebit;
 
 public interface IElevator
 {
-    void board(Elevator.Direction direction, int toFloor, int fromFloor);
+    void board(ElevatorTask task);
+    void pressButtonStop(int codeTask, boolean stopped);
 }
