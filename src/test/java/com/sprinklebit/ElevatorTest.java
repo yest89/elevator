@@ -52,6 +52,6 @@ public class ElevatorTest
         Elevator elevator = new Elevator();
         elevator.working();
         ElevatorTest elevatorTest = new ElevatorTest(elevator);
-        elevatorTest.testWithStopButton();
+        elevatorTest.test();
     }
 }
