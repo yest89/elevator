@@ -10,5 +10,4 @@ public interface ElevatorConfiguration
     int TIME_FOR_OPENING_DOOR = 3; // s
     int MILLISECONDS_IN_SECOND = 1000;
     int TIME_FOR_BOARDING = 3; // s
-
 }
